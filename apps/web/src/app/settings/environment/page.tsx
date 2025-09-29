@@ -44,6 +44,7 @@ export default function EnvironmentPage() {
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
   const [newGroupName, setNewGroupName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [mobileGroupsOpen, setMobileGroupsOpen] = useState(false)
 
   useEffect(() => {
     loadGroups()
@@ -242,9 +243,9 @@ export default function EnvironmentPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100">Environment Variables</h1>
-        <p className="text-gray-400 mt-2">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">Environment Variables</h1>
+        <p className="text-sm sm:text-base text-gray-400 mt-2">
           Manage your application environment variables and credentials. Values are encrypted and stored securely.
         </p>
       </div>
@@ -253,17 +254,43 @@ export default function EnvironmentPage() {
         <div
           className={`mb-6 p-4 rounded-lg ${
             message.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-green-900/20 text-green-400 border border-green-800'
+              : 'bg-red-900/20 text-red-400 border border-red-800'
           }`}
         >
           {message.text}
         </div>
       )}
 
-      <div className="flex gap-6">
-        {/* Groups Sidebar */}
-        <div className="w-80 bg-gray-900 rounded-lg border border-gray-800">
+      {/* Mobile Group Selector */}
+      <div className="lg:hidden mb-4">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
+          <label className="block text-sm font-medium text-gray-300 mb-2">Select Group</label>
+          <div className="relative">
+            <select
+              value={selectedGroup || ''}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className="w-full appearance-none px-3 py-2 pr-10 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              style={{ fontSize: '16px' }} // Prevents zoom on iOS
+            >
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.icon} {group.name} ({group.variables.length})
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Groups Sidebar - Hidden on mobile */}
+        <div className="hidden lg:block w-full lg:w-80 bg-gray-900 rounded-lg border border-gray-800">
           <div className="p-4 border-b border-gray-800">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-100">Groups</h2>
@@ -365,17 +392,17 @@ export default function EnvironmentPage() {
         </div>
 
         {/* Variables Panel */}
-        <div className="flex-1 bg-gray-900 rounded-lg border border-gray-800">
+        <div className="flex-1 min-w-0 bg-gray-900 rounded-lg border border-gray-800">
           {currentGroup ? (
             <>
-              <div className="p-6 border-b border-gray-800">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-4 sm:p-6 border-b border-gray-800">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{currentGroup.icon}</span>
+                    <span className="text-2xl sm:text-3xl">{currentGroup.icon}</span>
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-100">{currentGroup.name}</h2>
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-100">{currentGroup.name}</h2>
                       {currentGroup.description && (
-                        <p className="text-sm text-gray-400">{currentGroup.description}</p>
+                        <p className="text-xs sm:text-sm text-gray-400">{currentGroup.description}</p>
                       )}
                     </div>
                   </div>
@@ -389,7 +416,7 @@ export default function EnvironmentPage() {
                   )}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     placeholder="Search variables..."
@@ -399,23 +426,23 @@ export default function EnvironmentPage() {
                   />
                   <button
                     onClick={() => addVariable(currentGroup.id)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap"
                   >
                     Add Variable
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto">
+              <div className="p-4 sm:p-6 space-y-4 max-h-[600px] overflow-y-auto overflow-x-hidden">
                 {filteredVariables?.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
                     {searchTerm ? 'No variables found matching your search' : 'No variables in this group yet'}
                   </div>
                 ) : (
                   filteredVariables?.map((variable) => (
-                    <div key={variable.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                      <div className="grid grid-cols-12 gap-3">
-                        <div className="col-span-4">
+                    <div key={variable.id} className="bg-gray-800 border border-gray-700 rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:grid sm:grid-cols-12 gap-3">
+                        <div className="sm:col-span-4">
                           <label className="block text-xs font-medium text-gray-400 mb-1">
                             Key
                           </label>
@@ -428,7 +455,7 @@ export default function EnvironmentPage() {
                           />
                         </div>
                         
-                        <div className="col-span-5">
+                        <div className="sm:col-span-5">
                           <label className="block text-xs font-medium text-gray-400 mb-1">
                             Value
                           </label>
@@ -461,11 +488,11 @@ export default function EnvironmentPage() {
                           </div>
                         </div>
 
-                        <div className="col-span-2">
-                          <label className="block text-xs font-medium text-gray-400 mb-1">
-                            Options
-                          </label>
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-row items-end gap-3 sm:col-span-3">
+                          <div className="flex-1 sm:flex-initial">
+                            <label className="block text-xs font-medium text-gray-400 mb-1 sm:hidden">
+                              Options
+                            </label>
                             <label className="flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
@@ -476,9 +503,7 @@ export default function EnvironmentPage() {
                               <span className="ml-1 text-xs text-gray-400">Secret</span>
                             </label>
                           </div>
-                        </div>
 
-                        <div className="col-span-1 flex items-end">
                           <button
                             onClick={() => removeVariable(currentGroup.id, variable.id)}
                             className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg"
@@ -489,7 +514,7 @@ export default function EnvironmentPage() {
                           </button>
                         </div>
 
-                        <div className="col-span-12">
+                        <div className="sm:col-span-12">
                           <input
                             type="text"
                             value={variable.description || ''}
@@ -512,7 +537,7 @@ export default function EnvironmentPage() {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end gap-3">
+      <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-end gap-3">
         <button
           onClick={loadGroups}
           className="px-6 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800"

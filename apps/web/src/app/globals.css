@@ -170,3 +170,25 @@
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+/* Custom select styles for better mobile support */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+}
+
+/* Dark theme for native select options */
+@media (prefers-color-scheme: dark) {
+  select option {
+    background-color: rgb(31, 41, 55);
+    color: rgb(243, 244, 246);
+  }
+}
+
+/* Override browser defaults for select */
+select option {
+  background-color: rgb(31, 41, 55);
+  color: rgb(243, 244, 246);
+  padding: 0.5rem;
+}
