@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { MobileMenu } from '@/components/sidebar/MobileMenu'
 import { PageTransition } from '@/components/layout/PageTransition'
@@ -11,6 +12,7 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const toggleSidebar = () => {
@@ -74,7 +76,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
           <div className="px-4 py-6 sm:px-6 lg:px-8">
-            <PageTransition>
+            <PageTransition key={pathname}>
               {children}
             </PageTransition>
           </div>
