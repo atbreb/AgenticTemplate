@@ -2,17 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  /* Dark theme as default */
-  :root {
-    @apply bg-gray-950 text-gray-100;
-  }
-  
-  body {
-    @apply bg-gray-950 text-gray-100;
-  }
-}
-
+/* Remove hardcoded dark theme - let Mantine handle it */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -34,15 +24,11 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
 
-  .dark {
+  /* Dark theme uses Mantine's data-mantine-color-scheme="dark" */
+  [data-mantine-color-scheme="dark"] {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -62,11 +48,6 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 94.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 }
 
@@ -74,8 +55,10 @@
   * {
     @apply border-border;
   }
+
+  /* Let Mantine handle body background and text color */
   body {
-    @apply bg-background text-foreground;
+    @apply antialiased;
   }
 }
 
@@ -85,7 +68,7 @@
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - theme aware */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -96,11 +79,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
+  background: var(--mantine-color-default-border);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground;
+  background: var(--mantine-color-dimmed);
 }
 
 /* Focus styles */
@@ -171,24 +155,15 @@
   animation: shimmer 2s infinite;
 }
 
-/* Custom select styles for better mobile support */
-select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: none;
+/* Smooth transitions for theme changes */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark theme for native select options */
-@media (prefers-color-scheme: dark) {
-  select option {
-    background-color: rgb(31, 41, 55);
-    color: rgb(243, 244, 246);
-  }
-}
-
-/* Override browser defaults for select */
-select option {
-  background-color: rgb(31, 41, 55);
-  color: rgb(243, 244, 246);
-  padding: 0.5rem;
+/* Disable transitions for elements that shouldn't animate */
+.no-theme-transition,
+.no-theme-transition * {
+  transition-property: none !important;
 }

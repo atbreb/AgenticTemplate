@@ -161,7 +161,9 @@ export async function getEnvironmentGroups(): Promise<EnvironmentGroup[]> {
     try {
       const data = await fs.readFile(STORAGE_PATH, 'utf-8')
       const groups = JSON.parse(data) as EnvironmentGroup[]
-      
+
+      console.log('📂 Loaded environment groups from storage')
+
       // Decrypt sensitive values
       return groups.map(group => ({
         ...group,
@@ -182,10 +184,12 @@ export async function getEnvironmentGroups(): Promise<EnvironmentGroup[]> {
       }))
     } catch (fileError) {
       // File doesn't exist, return default structure
+      console.log('📋 No saved environment groups found, using defaults')
       return getDefaultGroups()
     }
   } catch (error) {
-    console.error('Failed to load environment groups:', error)
+    console.error('❌ Failed to load environment groups:', error)
+    console.log('📋 Falling back to default groups')
     return getDefaultGroups()
   }
 }

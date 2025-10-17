@@ -1,52 +1,66 @@
+'use client'
+
 import Link from 'next/link'
+import { Card, Grid, Title, Text, Stack, ThemeIcon, Group } from '@mantine/core'
+import { IconAdjustments, IconKey } from '@tabler/icons-react'
 
 const settingsCategories = [
   {
     title: 'Environment Variables',
     description: 'Manage all your application environment variables and credentials in organized groups',
     href: '/settings/environment',
-    icon: '🔧'
+    icon: IconAdjustments,
+    color: 'blue'
   },
   {
     title: 'API Keys',
     description: 'Quick setup for AI provider API keys with validation',
     href: '/settings/api-keys',
-    icon: '🔑'
+    icon: IconKey,
+    color: 'violet'
   }
 ]
 
 export default function SettingsPage() {
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-100">Settings</h1>
-        <p className="text-gray-400 mt-2">
+    <Stack maw={1200}>
+      <div>
+        <Title order={1} size="h2" mb="xs">Settings</Title>
+        <Text size="sm" c="dimmed">
           Configure your application settings, credentials, and integrations
-        </p>
+        </Text>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Grid>
         {settingsCategories.map((category) => (
-          <Link
-            key={category.title}
-            href={category.href}
-            className="block p-6 bg-gray-900 rounded-lg border border-gray-800 hover:border-indigo-600 hover:bg-gray-800 transition-all"
-          >
-            <div className="flex items-start gap-4">
-              <span className="text-4xl">{category.icon}</span>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-100 mb-2">
-                  {category.title}
-                </h2>
-                <p className="text-gray-400 text-sm">
-                  {category.description}
-                </p>
-              </div>
-            </div>
-          </Link>
+          <Grid.Col key={category.title} span={{ base: 12, md: 6 }}>
+            <Card
+              component={Link}
+              href={category.href}
+              shadow="sm"
+              padding="lg"
+              radius="md"
+              withBorder
+              style={{ cursor: 'pointer', height: '100%' }}
+              className="transition-all hover:shadow-md"
+            >
+              <Group align="flex-start" gap="md">
+                <ThemeIcon size={60} radius="md" variant="light" color={category.color}>
+                  <category.icon size={32} />
+                </ThemeIcon>
+                <Stack gap="xs" flex={1}>
+                  <Text fw={600} size="lg">
+                    {category.title}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {category.description}
+                  </Text>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
         ))}
-      </div>
-
-    </div>
+      </Grid>
+    </Stack>
   )
 }

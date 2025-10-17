@@ -1,14 +1,50 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  saveEnvironmentGroups, 
-  getEnvironmentGroups, 
+import {
+  saveEnvironmentGroups,
+  getEnvironmentGroups,
   testConnection,
   deleteGroup,
   exportGroups,
   importGroups
 } from './actions'
+import {
+  Stack,
+  Title,
+  Text,
+  Alert,
+  Grid,
+  Card,
+  TextInput,
+  Button,
+  Group,
+  ActionIcon,
+  Checkbox,
+  Loader,
+  Center,
+  Box,
+  NavLink,
+  Select,
+  FileButton,
+  Badge,
+  Divider,
+  PasswordInput,
+  Textarea,
+  Modal
+} from '@mantine/core'
+import {
+  IconEye,
+  IconEyeOff,
+  IconCheck,
+  IconAlertCircle,
+  IconDownload,
+  IconUpload,
+  IconPlus,
+  IconTrash,
+  IconDatabase,
+  IconSearch
+} from '@tabler/icons-react'
 
 interface EnvironmentVariable {
   id: string
@@ -41,10 +77,9 @@ export default function EnvironmentPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showValues, setShowValues] = useState<Record<string, boolean>>({})
-  const [editingGroup, setEditingGroup] = useState<string | null>(null)
+  const [addGroupModalOpen, setAddGroupModalOpen] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [mobileGroupsOpen, setMobileGroupsOpen] = useState(false)
 
   useEffect(() => {
     loadGroups()
@@ -53,23 +88,13 @@ export default function EnvironmentPage() {
   const loadGroups = async () => {
     try {
       const loadedGroups = await getEnvironmentGroups()
-      // Initialize with default groups if empty
-      if (loadedGroups.length === 0) {
-        const initialGroups = DEFAULT_GROUPS.map(g => ({
-          ...g,
-          variables: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }))
-        setGroups(initialGroups)
-        setSelectedGroup(initialGroups[0]?.id || null)
-      } else {
-        setGroups(loadedGroups)
-        setSelectedGroup(loadedGroups[0]?.id || null)
-      }
+      // Server action already handles fallback to defaults
+      setGroups(loadedGroups)
+      setSelectedGroup(loadedGroups[0]?.id || null)
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to load environment groups' })
-      // Initialize with defaults on error
+      console.error('Error loading environment groups:', error)
+      setMessage({ type: 'error', text: 'Failed to load environment groups. Using defaults.' })
+      // Fallback to defaults in case of catastrophic failure
       const initialGroups = DEFAULT_GROUPS.map(g => ({
         ...g,
         variables: [],
@@ -98,7 +123,7 @@ export default function EnvironmentPage() {
 
   const addGroup = () => {
     if (!newGroupName.trim()) return
-    
+
     const newGroup: EnvironmentGroup = {
       id: newGroupName.toLowerCase().replace(/\s+/g, '-'),
       name: newGroupName,
@@ -107,11 +132,11 @@ export default function EnvironmentPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
-    
+
     setGroups([...groups, newGroup])
     setSelectedGroup(newGroup.id)
     setNewGroupName('')
-    setEditingGroup(null)
+    setAddGroupModalOpen(false)
   }
 
   const removeGroup = async (groupId: string) => {
@@ -136,20 +161,20 @@ export default function EnvironmentPage() {
       value: '',
       isSecret: false,
     }
-    
-    setGroups(groups.map(g => 
-      g.id === groupId 
+
+    setGroups(groups.map(g =>
+      g.id === groupId
         ? { ...g, variables: [...g.variables, newVar], updatedAt: new Date().toISOString() }
         : g
     ))
   }
 
   const updateVariable = (groupId: string, varId: string, field: keyof EnvironmentVariable, value: any) => {
-    setGroups(groups.map(g => 
-      g.id === groupId 
+    setGroups(groups.map(g =>
+      g.id === groupId
         ? {
             ...g,
-            variables: g.variables.map(v => 
+            variables: g.variables.map(v =>
               v.id === varId ? { ...v, [field]: value } : v
             ),
             updatedAt: new Date().toISOString()
@@ -159,8 +184,8 @@ export default function EnvironmentPage() {
   }
 
   const removeVariable = (groupId: string, varId: string) => {
-    setGroups(groups.map(g => 
-      g.id === groupId 
+    setGroups(groups.map(g =>
+      g.id === groupId
         ? {
             ...g,
             variables: g.variables.filter(v => v.id !== varId),
@@ -213,8 +238,7 @@ export default function EnvironmentPage() {
     }
   }
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const handleImport = async (file: File | null) => {
     if (!file) return
 
     try {
@@ -228,330 +252,294 @@ export default function EnvironmentPage() {
   }
 
   const currentGroup = groups.find(g => g.id === selectedGroup)
-  const filteredVariables = currentGroup?.variables.filter(v => 
+  const filteredVariables = currentGroup?.variables.filter(v =>
     v.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
     v.description?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading environment variables...</div>
-      </div>
+      <Center h={400}>
+        <Stack align="center" gap="md">
+          <Loader size="lg" />
+          <Text c="dimmed">Loading environment variables...</Text>
+        </Stack>
+      </Center>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">Environment Variables</h1>
-        <p className="text-sm sm:text-base text-gray-400 mt-2">
+    <Stack gap="xl" maw={1400}>
+      <div>
+        <Title order={1} size="h2" mb="xs">Environment Variables</Title>
+        <Text size="sm" c="dimmed">
           Manage your application environment variables and credentials. Values are encrypted and stored securely.
-        </p>
+        </Text>
       </div>
 
       {message && (
-        <div
-          className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-900/20 text-green-400 border border-green-800'
-              : 'bg-red-900/20 text-red-400 border border-red-800'
-          }`}
+        <Alert
+          icon={message.type === 'success' ? <IconCheck size={16} /> : <IconAlertCircle size={16} />}
+          title={message.type === 'success' ? 'Success' : 'Error'}
+          color={message.type === 'success' ? 'green' : 'red'}
+          withCloseButton
+          onClose={() => setMessage(null)}
         >
           {message.text}
-        </div>
+        </Alert>
       )}
 
       {/* Mobile Group Selector */}
-      <div className="lg:hidden mb-4">
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Select Group</label>
-          <div className="relative">
-            <select
-              value={selectedGroup || ''}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-              className="w-full appearance-none px-3 py-2 pr-10 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-              style={{ fontSize: '16px' }} // Prevents zoom on iOS
-            >
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.icon} {group.name} ({group.variables.length})
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Box hiddenFrom="lg">
+        <Select
+          label="Select Group"
+          placeholder="Choose a group"
+          data={groups.map(g => ({
+            value: g.id,
+            label: `${g.icon} ${g.name} (${g.variables.length})`
+          }))}
+          value={selectedGroup}
+          onChange={(value) => setSelectedGroup(value)}
+        />
+      </Box>
 
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <Grid>
         {/* Groups Sidebar - Hidden on mobile */}
-        <div className="hidden lg:block w-full lg:w-80 bg-gray-900 rounded-lg border border-gray-800">
-          <div className="p-4 border-b border-gray-800">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-100">Groups</h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleExport}
-                  className="p-2 text-gray-400 hover:text-gray-200"
-                  title="Export"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </button>
-                <label className="p-2 text-gray-400 hover:text-gray-200 cursor-pointer" title="Import">
-                  <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                </label>
-              </div>
-            </div>
-            
-            {editingGroup === 'new' ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="Group name"
-                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg text-sm"
-                  onKeyPress={(e) => e.key === 'Enter' && addGroup()}
-                  autoFocus
-                />
-                <button
-                  onClick={addGroup}
-                  className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm"
-                >
-                  Add
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingGroup(null)
-                    setNewGroupName('')
-                  }}
-                  className="px-3 py-2 border border-gray-700 rounded-lg text-sm text-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setEditingGroup('new')}
-                className="w-full px-3 py-2 border border-dashed border-gray-700 rounded-lg text-gray-400 hover:border-gray-600 hover:text-gray-200 text-sm"
-              >
-                + Add Group
-              </button>
-            )}
-          </div>
-
-          <div className="p-2">
-            {groups.map((group) => (
-              <div
-                key={group.id}
-                className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                  selectedGroup === group.id
-                    ? 'bg-indigo-900 text-indigo-300'
-                    : 'hover:bg-gray-800 text-gray-300'
-                }`}
-                onClick={() => setSelectedGroup(group.id)}
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  <span className="text-xl">{group.icon}</span>
-                  <div className="flex-1">
-                    <div className="font-medium">{group.name}</div>
-                    {group.description && (
-                      <div className="text-xs text-gray-500">{group.description}</div>
+        <Grid.Col span={{ base: 12, lg: 3 }} visibleFrom="lg">
+          <Card shadow="sm" padding="md" radius="md" withBorder>
+            <Stack gap="md">
+              <Group justify="space-between">
+                <Text fw={600}>Groups</Text>
+                <Group gap="xs">
+                  <ActionIcon variant="subtle" color="gray" onClick={handleExport} title="Export">
+                    <IconDownload size={16} />
+                  </ActionIcon>
+                  <FileButton onChange={handleImport} accept="application/json">
+                    {(props) => (
+                      <ActionIcon {...props} variant="subtle" color="gray" title="Import">
+                        <IconUpload size={16} />
+                      </ActionIcon>
                     )}
-                    <div className="text-xs text-gray-500 mt-1">
-                      {group.variables.length} variable{group.variables.length !== 1 ? 's' : ''}
-                    </div>
-                  </div>
-                </div>
-                {!['database', 'ai-providers'].includes(group.id) && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removeGroup(group.id)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700 transition-opacity"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                  </FileButton>
+                </Group>
+              </Group>
+
+              <Button
+                variant="light"
+                leftSection={<IconPlus size={16} />}
+                onClick={() => setAddGroupModalOpen(true)}
+                fullWidth
+              >
+                Add Group
+              </Button>
+
+              <Divider />
+
+              <Stack gap="xs">
+                {groups.map((group) => (
+                  <NavLink
+                    key={group.id}
+                    label={
+                      <Group justify="space-between" wrap="nowrap">
+                        <Group gap="xs">
+                          <Text span>{group.icon}</Text>
+                          <div>
+                            <Text size="sm" fw={500}>{group.name}</Text>
+                            <Text size="xs" c="dimmed">{group.variables.length} variables</Text>
+                          </div>
+                        </Group>
+                        {!['database', 'ai-providers'].includes(group.id) && (
+                          <ActionIcon
+                            size="sm"
+                            color="red"
+                            variant="subtle"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeGroup(group.id)
+                            }}
+                          >
+                            <IconTrash size={14} />
+                          </ActionIcon>
+                        )}
+                      </Group>
+                    }
+                    active={selectedGroup === group.id}
+                    onClick={() => setSelectedGroup(group.id)}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+          </Card>
+        </Grid.Col>
 
         {/* Variables Panel */}
-        <div className="flex-1 min-w-0 bg-gray-900 rounded-lg border border-gray-800">
-          {currentGroup ? (
-            <>
-              <div className="p-4 sm:p-6 border-b border-gray-800">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl sm:text-3xl">{currentGroup.icon}</span>
+        <Grid.Col span={{ base: 12, lg: 9 }}>
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            {currentGroup ? (
+              <Stack gap="md">
+                <Group justify="space-between" wrap="nowrap">
+                  <Group gap="md">
+                    <Text size="xl">{currentGroup.icon}</Text>
                     <div>
-                      <h2 className="text-lg sm:text-xl font-semibold text-gray-100">{currentGroup.name}</h2>
+                      <Title order={3} size="h4">{currentGroup.name}</Title>
                       {currentGroup.description && (
-                        <p className="text-xs sm:text-sm text-gray-400">{currentGroup.description}</p>
+                        <Text size="sm" c="dimmed">{currentGroup.description}</Text>
                       )}
                     </div>
-                  </div>
+                  </Group>
                   {currentGroup.id === 'database' && (
-                    <button
+                    <Button
+                      variant="light"
+                      leftSection={<IconDatabase size={16} />}
                       onClick={() => testDatabaseConnection(currentGroup.id)}
-                      className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 border border-gray-700"
                     >
                       Test Connection
-                    </button>
+                    </Button>
                   )}
-                </div>
+                </Group>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
+                <Group>
+                  <TextInput
+                    flex={1}
                     placeholder="Search variables..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg"
+                    leftSection={<IconSearch size={16} />}
                   />
-                  <button
+                  <Button
+                    leftSection={<IconPlus size={16} />}
                     onClick={() => addVariable(currentGroup.id)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap"
                   >
                     Add Variable
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Group>
 
-              <div className="p-4 sm:p-6 space-y-4 max-h-[600px] overflow-y-auto overflow-x-hidden">
-                {filteredVariables?.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">
-                    {searchTerm ? 'No variables found matching your search' : 'No variables in this group yet'}
-                  </div>
-                ) : (
-                  filteredVariables?.map((variable) => (
-                    <div key={variable.id} className="bg-gray-800 border border-gray-700 rounded-lg p-3 sm:p-4">
-                      <div className="flex flex-col sm:grid sm:grid-cols-12 gap-3">
-                        <div className="sm:col-span-4">
-                          <label className="block text-xs font-medium text-gray-400 mb-1">
-                            Key
-                          </label>
-                          <input
-                            type="text"
-                            value={variable.key}
-                            onChange={(e) => updateVariable(currentGroup.id, variable.id, 'key', e.target.value)}
-                            placeholder="VARIABLE_NAME"
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-100 rounded-lg text-sm font-mono"
-                          />
-                        </div>
-                        
-                        <div className="sm:col-span-5">
-                          <label className="block text-xs font-medium text-gray-400 mb-1">
-                            Value
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={variable.isSecret && !showValues[variable.id] ? 'password' : 'text'}
-                              value={variable.value}
-                              onChange={(e) => updateVariable(currentGroup.id, variable.id, 'value', e.target.value)}
-                              placeholder="Value"
-                              className="w-full px-3 py-2 pr-10 bg-gray-900 border border-gray-700 text-gray-100 rounded-lg text-sm"
-                            />
-                            {variable.isSecret && (
-                              <button
-                                type="button"
-                                onClick={() => toggleShowValue(variable.id)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                              >
-                                {showValues[variable.id] ? (
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                  </svg>
-                                ) : (
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  </svg>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                <Divider />
 
-                        <div className="flex flex-row items-end gap-3 sm:col-span-3">
-                          <div className="flex-1 sm:flex-initial">
-                            <label className="block text-xs font-medium text-gray-400 mb-1 sm:hidden">
-                              Options
-                            </label>
-                            <label className="flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={variable.isSecret}
-                                onChange={(e) => updateVariable(currentGroup.id, variable.id, 'isSecret', e.target.checked)}
-                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                <Box mah={600} style={{ overflowY: 'auto' }}>
+                  <Stack gap="md">
+                    {filteredVariables?.length === 0 ? (
+                      <Center py={60}>
+                        <Text c="dimmed">
+                          {searchTerm ? 'No variables found matching your search' : 'No variables in this group yet'}
+                        </Text>
+                      </Center>
+                    ) : (
+                      filteredVariables?.map((variable) => (
+                        <Card key={variable.id} padding="md" withBorder>
+                          <Grid gutter="md">
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                              <TextInput
+                                label="Key"
+                                placeholder="VARIABLE_NAME"
+                                value={variable.key}
+                                onChange={(e) => updateVariable(currentGroup.id, variable.id, 'key', e.target.value)}
+                                styles={{ input: { fontFamily: 'monospace' } }}
                               />
-                              <span className="ml-1 text-xs text-gray-400">Secret</span>
-                            </label>
-                          </div>
+                            </Grid.Col>
 
-                          <button
-                            onClick={() => removeVariable(currentGroup.id, variable.id)}
-                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
+                            <Grid.Col span={{ base: 12, sm: 5 }}>
+                              {variable.isSecret ? (
+                                <PasswordInput
+                                  label="Value"
+                                  placeholder="Value"
+                                  value={variable.value}
+                                  onChange={(e) => updateVariable(currentGroup.id, variable.id, 'value', e.target.value)}
+                                  visible={showValues[variable.id]}
+                                  onVisibilityChange={() => toggleShowValue(variable.id)}
+                                />
+                              ) : (
+                                <TextInput
+                                  label="Value"
+                                  placeholder="Value"
+                                  value={variable.value}
+                                  onChange={(e) => updateVariable(currentGroup.id, variable.id, 'value', e.target.value)}
+                                />
+                              )}
+                            </Grid.Col>
 
-                        <div className="sm:col-span-12">
-                          <input
-                            type="text"
-                            value={variable.description || ''}
-                            onChange={(e) => updateVariable(currentGroup.id, variable.id, 'description', e.target.value)}
-                            placeholder="Description (optional)"
-                            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-400"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              Select a group to manage its variables
-            </div>
-          )}
-        </div>
-      </div>
+                            <Grid.Col span={{ base: 12, sm: 3 }}>
+                              <Stack gap="xs" justify="flex-end" h="100%">
+                                <Checkbox
+                                  label="Secret"
+                                  checked={variable.isSecret}
+                                  onChange={(e) => updateVariable(currentGroup.id, variable.id, 'isSecret', e.currentTarget.checked)}
+                                />
+                                <Button
+                                  color="red"
+                                  variant="light"
+                                  leftSection={<IconTrash size={16} />}
+                                  onClick={() => removeVariable(currentGroup.id, variable.id)}
+                                  fullWidth
+                                >
+                                  Remove
+                                </Button>
+                              </Stack>
+                            </Grid.Col>
 
-      <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-end gap-3">
-        <button
-          onClick={loadGroups}
-          className="px-6 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800"
-        >
+                            <Grid.Col span={12}>
+                              <TextInput
+                                placeholder="Description (optional)"
+                                value={variable.description || ''}
+                                onChange={(e) => updateVariable(currentGroup.id, variable.id, 'description', e.target.value)}
+                              />
+                            </Grid.Col>
+                          </Grid>
+                        </Card>
+                      ))
+                    )}
+                  </Stack>
+                </Box>
+              </Stack>
+            ) : (
+              <Center h={400}>
+                <Text c="dimmed">Select a group to manage its variables</Text>
+              </Center>
+            )}
+          </Card>
+        </Grid.Col>
+      </Grid>
+
+      <Group justify="flex-end">
+        <Button variant="default" onClick={loadGroups}>
           Reset
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-        >
+        </Button>
+        <Button onClick={handleSave} loading={saving}>
           {saving ? 'Saving...' : 'Save All Changes'}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Group>
+
+      {/* Add Group Modal */}
+      <Modal
+        opened={addGroupModalOpen}
+        onClose={() => {
+          setAddGroupModalOpen(false)
+          setNewGroupName('')
+        }}
+        title="Add New Group"
+      >
+        <Stack>
+          <TextInput
+            label="Group Name"
+            placeholder="Enter group name"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addGroup()}
+            autoFocus
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => {
+              setAddGroupModalOpen(false)
+              setNewGroupName('')
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={addGroup} disabled={!newGroupName.trim()}>
+              Add Group
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Stack>
   )
 }

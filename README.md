@@ -9,7 +9,7 @@ A production-ready, full-stack template for building AI-powered applications wit
 - **Real-time Streaming**: gRPC-based streaming for token-by-token AI responses
 - **Stateful AI Agent**: LangChainGo implementation with tools and memory
 - **Database Integration**: Neon serverless PostgreSQL with pgx driver
-- **Modern UI**: Responsive sidebar layout with Tailwind CSS
+- **Modern UI**: Mantine component library with dark/light theme support
 - **API Key Management**: Secure configuration page for managing provider API keys
 - **Docker Ready**: Containerized services with Docker Compose
 
@@ -31,7 +31,8 @@ agentic-template/
 ### Frontend
 - **Next.js 14** with App Router
 - **TypeScript** for type safety
-- **Tailwind CSS** for styling
+- **Mantine UI** for component library
+- **Tailwind CSS** for utility styling
 - **gRPC-Web** for backend communication
 - **Server Actions** for secure API calls
 

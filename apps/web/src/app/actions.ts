@@ -85,43 +85,7 @@ export async function* streamAgentResponseAction(
   const streamPromise = new Promise<AsyncGenerator<AgentResponse, void, unknown>>((resolve, reject) => {
     try {
       const call = client.streamAgentResponse(request)
-      
-      // Convert the gRPC stream to an async generator
-      async function* responseGenerator(): AsyncGenerator<AgentResponse, void, unknown> {
-        const chunks: AgentResponse[] = []
-        let isComplete = false
-
-        // Set up event handlers
-        call.on('data', (response: AgentResponse) => {
-          chunks.push(response)
-        })
-
-        call.on('error', (error: grpc.ServiceError) => {
-          console.error('gRPC stream error:', error)
-          chunks.push({
-            event: { error: error.message },
-            timestamp: Date.now()
-          })
-          isComplete = true
-        })
-
-        call.on('end', () => {
-          isComplete = true
-        })
-
-        // Yield chunks as they arrive
-        while (!isComplete || chunks.length > 0) {
-          if (chunks.length > 0) {
-            const chunk = chunks.shift()!
-            yield chunk
-          } else {
-            // Wait a bit for more chunks
-            await new Promise(resolve => setTimeout(resolve, 10))
-          }
-        }
-      }
-
-      resolve(responseGenerator())
+      resolve(createGenerator(call))
     } catch (error) {
       reject(error)
     }
@@ -131,19 +95,55 @@ export async function* streamAgentResponseAction(
   yield* generator
 }
 
+// Helper function for the generator (moved outside to avoid strict mode issues)
+async function* createGenerator(call: any): AsyncGenerator<AgentResponse, void, unknown> {
+  const chunks: AgentResponse[] = []
+  let isComplete = false
+
+  // Set up event handlers
+  call.on('data', (response: AgentResponse) => {
+    chunks.push(response)
+  })
+
+  call.on('error', (error: grpc.ServiceError) => {
+    console.error('gRPC stream error:', error)
+    chunks.push({
+      event: { error: error.message },
+      timestamp: Date.now()
+    })
+    isComplete = true
+  })
+
+  call.on('end', () => {
+    isComplete = true
+  })
+
+  // Yield chunks as they arrive
+  while (!isComplete || chunks.length > 0) {
+    if (chunks.length > 0) {
+      const chunk = chunks.shift()!
+      yield chunk
+    } else {
+      // Wait a bit for more chunks
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+  }
+}
+
 // Alternative implementation using ReadableStream for client components
 export async function createAgentResponseStream(
   query: string,
   conversationId?: string
-): Promise<ReadableStream<string>> {
+): Promise<ReadableStream<Uint8Array>> {
   const encoder = new TextEncoder()
-  
+
   return new ReadableStream({
     async start(controller) {
       try {
         for await (const response of streamAgentResponseAction(query, conversationId)) {
           const message = JSON.stringify(response) + '\n'
-          controller.enqueue(encoder.encode(message))
+          const encoded = encoder.encode(message)
+          controller.enqueue(encoded)
         }
       } catch (error) {
         console.error('Stream error:', error)

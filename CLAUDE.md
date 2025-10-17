@@ -5,7 +5,7 @@ This document provides context for Claude Code when working with this project.
 ## Project Overview
 
 This is an AI-powered full-stack template application built with:
-- **Frontend**: Next.js 14 with TypeScript, Tailwind CSS, and Turbopack
+- **Frontend**: Next.js 14 with TypeScript, Mantine UI, Tailwind CSS, and Turbopack
 - **Backend**: Go with gRPC, LangChainGo, and PostgreSQL
 - **Infrastructure**: Turborepo monorepo, Docker, Protocol Buffers
 
@@ -16,6 +16,7 @@ This is an AI-powered full-stack template application built with:
 3. **API Key Management**: Secure configuration page at `/settings/api-keys`
 4. **Stateful AI Agent**: LangChainGo implementation with tools and memory
 5. **Database Integration**: Neon serverless PostgreSQL with pgx driver
+6. **Dark/Light Theme**: Built-in theme toggle with Mantine UI components
 
 ## Project Structure
 
@@ -30,7 +31,8 @@ AgenticTemplate/
 │   └── web/          # Next.js frontend
 │       ├── src/
 │       │   ├── app/  # App router pages and actions
-│       │   ├── components/ # React components
+│       │   ├── components/ # React components (Mantine UI)
+│       │   ├── theme/ # Mantine theme configuration
 │       │   └── lib/  # Utilities and gRPC client
 │       └── Dockerfile
 ├── packages/
@@ -75,6 +77,7 @@ Key environment variables needed:
 2. **Dual Database URLs**: Separate pooled and direct connections for Neon
 3. **Stateful Agent Loop**: Custom orchestration simulates LangGraph behavior
 4. **Multi-Provider Support**: Agent can switch between different LLM providers
+5. **Mantine UI Framework**: Component library with built-in dark/light theme support
 
 ## Current Status
 
@@ -85,6 +88,7 @@ All core features have been implemented:
 - ✅ LangChainGo AI agent
 - ✅ API key configuration page
 - ✅ Docker support
+- ✅ Mantine UI with dark/light theme support
 - ✅ Comprehensive documentation
 
 ## Notes for Future Development
@@ -93,3 +97,5 @@ All core features have been implemented:
 - Go needs to be installed locally for backend development
 - Database migrations should use the `DATABASE_URL_DIRECT` connection
 - API keys can be managed through the web UI at `/settings/api-keys`
+- Theme customization can be done in `apps/web/src/theme/theme.ts`
+- All UI components use Mantine - refer to https://mantine.dev for documentation

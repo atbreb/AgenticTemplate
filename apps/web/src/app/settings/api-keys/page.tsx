@@ -2,6 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { saveApiKeys, getApiKeys, testApiKey } from './actions'
+import {
+  Stack,
+  Title,
+  Text,
+  Card,
+  TextInput,
+  Button,
+  Group,
+  Badge,
+  Alert,
+  ActionIcon,
+  Loader,
+  Code
+} from '@mantine/core'
+import { IconEye, IconEyeOff, IconCheck, IconX, IconAlertCircle, IconInfoCircle } from '@tabler/icons-react'
 
 interface ApiKeyConfig {
   provider: string
@@ -100,121 +115,116 @@ export default function ApiKeysPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">Loading API keys...</div>
-      </div>
+      <Group justify="center" h={400}>
+        <Stack align="center" gap="md">
+          <Loader size="lg" />
+          <Text c="dimmed">Loading API keys...</Text>
+        </Stack>
+      </Group>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-100">API Keys Configuration</h1>
-        <p className="text-sm sm:text-base text-gray-400 mt-2">
+    <Stack gap="xl" maw={900}>
+      <div>
+        <Title order={1} size="h2" mb="xs">API Keys Configuration</Title>
+        <Text size="sm" c="dimmed">
           Configure your API keys for various AI providers. Keys are encrypted and stored securely.
-        </p>
+        </Text>
       </div>
 
       {message && (
-        <div
-          className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-900/20 text-green-400 border border-green-800'
-              : 'bg-red-900/20 text-red-400 border border-red-800'
-          }`}
+        <Alert
+          icon={message.type === 'success' ? <IconCheck size={16} /> : <IconAlertCircle size={16} />}
+          title={message.type === 'success' ? 'Success' : 'Error'}
+          color={message.type === 'success' ? 'green' : 'red'}
+          withCloseButton
+          onClose={() => setMessage(null)}
         >
           {message.text}
-        </div>
+        </Alert>
       )}
 
-      <div className="space-y-6">
+      <Stack gap="md">
         {API_PROVIDERS.map((provider) => {
           const config = apiKeys[provider.id] || { provider: provider.id, key: '' }
           const isShown = showKeys[provider.id]
-          
-          return (
-            <div key={provider.id} className="bg-gray-900 rounded-lg border border-gray-800 p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-100">{provider.name}</h3>
-                  {config.isValid !== undefined && (
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        config.isValid
-                          ? 'bg-green-900/30 text-green-400'
-                          : 'bg-red-900/30 text-red-400'
-                      }`}
-                    >
-                      {config.isValid ? 'Valid' : 'Invalid'}
-                    </span>
-                  )}
-                </div>
-                <code className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded self-start sm:self-auto">
-                  {provider.envVar}
-                </code>
-              </div>
 
-              <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1 relative">
-                    <input
-                      type={isShown ? 'text' : 'password'}
-                      value={config.key}
-                      onChange={(e) => updateApiKey(provider.id, e.target.value)}
-                      placeholder={provider.placeholder}
-                      className="w-full px-3 sm:px-4 py-2 pr-10 bg-gray-800 border border-gray-700 text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent text-sm sm:text-base"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => toggleShowKey(provider.id)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                    >
-                      {isShown ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  <button
+          return (
+            <Card key={provider.id} shadow="sm" padding="lg" radius="md" withBorder>
+              <Stack gap="md">
+                <Group justify="space-between">
+                  <Group gap="sm">
+                    <Text fw={600} size="lg">{provider.name}</Text>
+                    {config.isValid !== undefined && (
+                      <Badge
+                        color={config.isValid ? 'green' : 'red'}
+                        variant="light"
+                        leftSection={config.isValid ? <IconCheck size={12} /> : <IconX size={12} />}
+                      >
+                        {config.isValid ? 'Valid' : 'Invalid'}
+                      </Badge>
+                    )}
+                  </Group>
+                  <Code>{provider.envVar}</Code>
+                </Group>
+
+                <Group align="flex-start" gap="sm">
+                  <TextInput
+                    flex={1}
+                    type={isShown ? 'text' : 'password'}
+                    value={config.key}
+                    onChange={(e) => updateApiKey(provider.id, e.target.value)}
+                    placeholder={provider.placeholder}
+                    rightSection={
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        onClick={() => toggleShowKey(provider.id)}
+                      >
+                        {isShown ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                      </ActionIcon>
+                    }
+                  />
+                  <Button
                     onClick={() => handleTest(provider.id)}
                     disabled={testing === provider.id || !config.key}
-                    className="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 border border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    loading={testing === provider.id}
+                    variant="light"
                   >
-                    {testing === provider.id ? 'Testing...' : 'Test'}
-                  </button>
-                </div>
+                    Test
+                  </Button>
+                </Group>
+
                 {config.lastTested && (
-                  <p className="text-xs text-gray-400">
+                  <Text size="xs" c="dimmed">
                     Last tested: {new Date(config.lastTested).toLocaleString()}
-                  </p>
+                  </Text>
                 )}
-              </div>
-            </div>
+              </Stack>
+            </Card>
           )
         })}
-      </div>
+      </Stack>
 
-      <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:justify-end gap-3">
-        <button
+      <Group justify="flex-end" gap="md">
+        <Button
+          variant="default"
           onClick={loadApiKeys}
-          className="w-full sm:w-auto px-6 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800"
         >
           Reset
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSave}
-          disabled={saving}
-          className="w-full sm:w-auto px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          loading={saving}
         >
-          {saving ? 'Saving...' : 'Save All Keys'}
-        </button>
-      </div>
-    </div>
+          Save All Keys
+        </Button>
+      </Group>
+
+      <Alert icon={<IconInfoCircle size={16} />} title="Security Note" color="blue" variant="light">
+        Your API keys are stored securely and encrypted. They are never exposed in client-side code.
+      </Alert>
+    </Stack>
   )
 }
